@@ -195,7 +195,7 @@ export function LabelMultiSelect({ selectedLabels, onChange }: LabelMultiSelectP
 
       {/* Notion-Style Multi-Select Popover */}
       {isOpen && (
-        <div className="absolute left-0 top-full mt-1.5 z-60 w-72 sm:w-80 bg-white border border-[#e4e4df] rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute left-0 top-full mt-1.5 z-[70] w-full bg-white border border-[#e4e4df] rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
           {/* Header Bar with Done button */}
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#f1f1ee] bg-[#fbfbfa]">
             <span className="text-[11px] font-semibold text-[#787774] uppercase tracking-wider">

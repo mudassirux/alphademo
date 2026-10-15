@@ -160,6 +160,12 @@ export function saveStoredStageColors(colors: Record<Stage, NotionColumnColor>) 
   }
 }
 
+export function setStageColor(stage: Stage, color: NotionColumnColor) {
+  const current = getStoredStageColors();
+  const updated = { ...current, [stage]: color };
+  saveStoredStageColors(updated);
+}
+
 export function subscribeToStageColors(
   callback: (colors: Record<Stage, NotionColumnColor>) => void
 ): () => void {
