@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   Building2,
   Briefcase,
@@ -11,10 +11,17 @@ import {
   PanelRight,
   FileText,
   AtSign,
-  MoreHorizontal
+  MoreHorizontal,
+  Tags
 } from 'lucide-react';
 import type { Contact } from '../types/contact';
+import { getLabelColor } from '../types/contact';
 import { getStageTheme } from '../utils/boardColors';
+import {
+  getPropertyVisibility,
+  subscribeToProperties,
+  type PropertyVisibilityState
+} from '../utils/propertyVisibilityStore';
 
 interface TableViewProps {
   contacts: Contact[];
@@ -39,17 +46,19 @@ const AaIcon = () => (
   <span className="font-semibold text-xs leading-none text-[#9b9a97] tracking-tight">Aa</span>
 );
 
-const COLUMNS: ColumnDef[] = [
+const ALL_COLUMN_DEFS: ColumnDef[] = [
   { id: 'name', label: 'Name', icon: AaIcon, defaultWidth: 220, minWidth: 140 },
   { id: 'email', label: 'Email', icon: AtSign, defaultWidth: 240, minWidth: 140 },
   { id: 'role', label: 'Role', icon: Briefcase, defaultWidth: 180, minWidth: 120 },
   { id: 'stage', label: 'Stage', icon: CircleDot, defaultWidth: 130, minWidth: 90 },
   { id: 'company', label: 'Company', icon: Building2, defaultWidth: 160, minWidth: 110 },
-  { id: 'owner', label: 'Owner', icon: UserRound, defaultWidth: 140, minWidth: 100 }
+  { id: 'owner', label: 'Owner', icon: UserRound, defaultWidth: 140, minWidth: 100 },
+  { id: 'labels', label: 'Labels', icon: Tags, defaultWidth: 200, minWidth: 130 },
+  { id: 'notes', label: 'Notes', icon: FileText, defaultWidth: 240, minWidth: 150 }
 ];
 
 const DEFAULT_WIDTHS: Record<string, number> = Object.fromEntries(
-  COLUMNS.map((c) => [c.id, c.defaultWidth])
+  ALL_COLUMN_DEFS.map((c) => [c.id, c.defaultWidth])
 );
 
 export function TableView({
@@ -69,6 +78,20 @@ export function TableView({
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
 
+  const [visibilityState, setVisibilityState] = useState<PropertyVisibilityState>(getPropertyVisibility());
+
+  useEffect(() => {
+    return subscribeToProperties((nextState) => {
+      setVisibilityState(nextState);
+    });
+  }, []);
+
+  const activeColumns = useMemo(() => {
+    return visibilityState.shown
+      .map((id) => ALL_COLUMN_DEFS.find((c) => c.id === id))
+      .filter((c): c is ColumnDef => !!c);
+  }, [visibilityState.shown]);
+
   const isAllSelected = contacts.length > 0 && contacts.every((c) => selectedRowIds.has(c.id));
   const isIndeterminate = selectedRowIds.size > 0 && !isAllSelected;
 
@@ -79,7 +102,7 @@ export function TableView({
       startWidthRef.current = columnWidths[colId] || DEFAULT_WIDTHS[colId];
       setResizingCol(colId);
 
-      const colDef = COLUMNS.find((c) => c.id === colId);
+      const colDef = ALL_COLUMN_DEFS.find((c) => c.id === colId);
       const minWidth = colDef?.minWidth || 80;
 
       const handleMouseMove = (e: MouseEvent) => {
@@ -114,7 +137,7 @@ export function TableView({
 
   const totalTableWidth =
     40 +
-    COLUMNS.reduce((acc, col) => acc + (columnWidths[col.id] || col.defaultWidth), 0) +
+    activeColumns.reduce((acc, col) => acc + (columnWidths[col.id] || col.defaultWidth), 0) +
     64;
 
   if (contacts.length === 0) {
@@ -177,12 +200,12 @@ export function TableView({
               </button>
             </th>
 
-            {COLUMNS.map((col, idx) => {
+            {activeColumns.map((col, idx) => {
               const Icon = col.icon;
               const width = columnWidths[col.id] || col.defaultWidth;
               const isResizing = resizingCol === col.id;
               const isHovered = hoveredCol === col.id;
-              const isLast = idx === COLUMNS.length - 1;
+              const isLast = idx === activeColumns.length - 1;
 
               return (
                 <th
@@ -316,107 +339,181 @@ export function TableView({
                   </button>
                 </td>
 
-                {/* 1. Name with Notion Page Icon matching Image 1 */}
-                <td
-                  style={{ width: `${columnWidths.name || 220}px` }}
-                  className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="w-4 h-4 text-[#787774] shrink-0 stroke-[1.6]" />
-                      <span className="font-semibold text-[#2e2e2a] group-hover:text-[#2383e2] transition-colors truncate">
-                        {contact.name}
-                      </span>
-                    </div>
+                {/* Dynamic Columns rendering */}
+                {activeColumns.map((col) => {
+                  const width = columnWidths[col.id] || col.defaultWidth;
 
-                    {/* Hover OPEN button matching Image 1 */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectContact(contact, e.currentTarget);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold text-[#55554e] hover:text-[#2e2e2a] bg-white border border-[#d7d7d1] hover:border-[#b5b5ae] rounded shadow-2xs cursor-pointer shrink-0"
-                    >
-                      <PanelRight className="w-3 h-3 text-[#9b9a97]" />
-                      <span>OPEN</span>
-                    </button>
-                  </div>
-                </td>
+                  if (col.id === 'name') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-[#787774] shrink-0 stroke-[1.6]" />
+                            <span className="font-semibold text-[#2e2e2a] group-hover:text-[#2383e2] transition-colors truncate">
+                              {contact.name}
+                            </span>
+                          </div>
 
-                {/* 2. Email matching Image 1 */}
-                <td
-                  style={{ width: `${columnWidths.email || 240}px` }}
-                  className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
-                >
-                  {contact.email ? (
-                    <span className="text-[#55554e] truncate block">
-                      {contact.email}
-                    </span>
-                  ) : null}
-                </td>
+                          {/* Hover OPEN button matching Image 1 */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectContact(contact, e.currentTarget);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold text-[#55554e] hover:text-[#2e2e2a] bg-white border border-[#d7d7d1] hover:border-[#b5b5ae] rounded shadow-2xs cursor-pointer shrink-0"
+                          >
+                            <PanelRight className="w-3 h-3 text-[#9b9a97]" />
+                            <span>OPEN</span>
+                          </button>
+                        </div>
+                      </td>
+                    );
+                  }
 
-                {/* 3. Role matching Image 1 */}
-                <td
-                  style={{ width: `${columnWidths.role || 180}px` }}
-                  className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
-                >
-                  {contact.role ? (
-                    <span className="text-[#55554e] truncate block">
-                      {contact.role}
-                    </span>
-                  ) : null}
-                </td>
+                  if (col.id === 'email') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        {contact.email ? (
+                          <span className="text-[#55554e] truncate block">
+                            {contact.email}
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  }
 
-                {/* 4. Stage matching Image 1 */}
-                <td
-                  style={{ width: `${columnWidths.stage || 130}px` }}
-                  className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
-                >
-                  {(() => {
+                  if (col.id === 'role') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        {contact.role ? (
+                          <span className="text-[#55554e] truncate block">
+                            {contact.role}
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  }
+
+                  if (col.id === 'stage') {
                     const stageTheme = getStageTheme(contact.stage);
                     return (
-                      <span
-                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border select-none transition-colors"
-                        style={{
-                          backgroundColor: stageTheme.pillBg,
-                          color: stageTheme.pillText,
-                          borderColor: stageTheme.swatchBorder
-                        }}
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
                       >
                         <span
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: stageTheme.pillText }}
-                        />
-                        <span>{contact.stage}</span>
-                      </span>
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border select-none transition-colors"
+                          style={{
+                            backgroundColor: stageTheme.pillBg,
+                            color: stageTheme.pillText,
+                            borderColor: stageTheme.swatchBorder
+                          }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: stageTheme.pillText }}
+                          />
+                          <span>{contact.stage}</span>
+                        </span>
+                      </td>
                     );
-                  })()}
-                </td>
+                  }
 
-                {/* 5. Company matching Image 1 */}
-                <td
-                  style={{ width: `${columnWidths.company || 160}px` }}
-                  className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
-                >
-                  {contact.company ? (
-                    <span className="text-[#37352f] truncate block">
-                      {contact.company}
-                    </span>
-                  ) : null}
-                </td>
+                  if (col.id === 'company') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        {contact.company ? (
+                          <span className="text-[#37352f] truncate block">
+                            {contact.company}
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  }
 
-                {/* 6. Owner matching Image 1 */}
-                <td
-                  style={{ width: `${columnWidths.owner || 140}px` }}
-                  className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
-                >
-                  {contact.owner && contact.owner !== 'Unassigned' ? (
-                    <span className="text-[#55554e] truncate block">
-                      {contact.owner}
-                    </span>
-                  ) : null}
-                </td>
+                  if (col.id === 'owner') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        {contact.owner && contact.owner !== 'Unassigned' ? (
+                          <span className="text-[#55554e] truncate block">
+                            {contact.owner}
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  }
+
+                  if (col.id === 'labels') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        {contact.labels && contact.labels.length > 0 ? (
+                          <div className="flex items-center gap-1 overflow-hidden">
+                            {contact.labels.map((label) => {
+                              const style = getLabelColor(label);
+                              return (
+                                <span
+                                  key={label}
+                                  className="inline-flex items-center text-[11px] py-0.5 px-2 rounded font-medium border truncate max-w-[120px]"
+                                  style={{
+                                    backgroundColor: style.bg,
+                                    color: style.text,
+                                    borderColor: style.border
+                                  }}
+                                >
+                                  {label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </td>
+                    );
+                  }
+
+                  if (col.id === 'notes') {
+                    return (
+                      <td
+                        key={col.id}
+                        style={{ width: `${width}px` }}
+                        className="h-10 py-0 px-3 border-r border-[#f1f1ee] align-middle"
+                      >
+                        {contact.notes ? (
+                          <span className="text-[#787774] truncate block" title={contact.notes}>
+                            {contact.notes}
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  }
+
+                  return null;
+                })}
 
                 {/* Trailing empty cells matching + and ... and stretch column */}
                 <td className="w-16 min-w-[64px] max-w-[64px] h-10 py-0 px-2 border-r border-[#f1f1ee] align-middle"></td>

@@ -3,14 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { STAGES } from '../../types/contact';
 import type { Stage } from '../../types/contact';
-import {
-  getStageTheme,
-  getStoredStageColors,
-  setStageColor,
-  subscribeToStageColors,
-  type NotionColumnColor
-} from '../../utils/boardColors';
-import { StageSettingsMenu } from './StageSettingsMenu';
+import { getStageTheme } from '../../utils/boardColors';
 
 interface StageSelectProps {
   value: Stage;
@@ -21,16 +14,8 @@ export function StageSelect({ value, onChange }: StageSelectProps) {
   const currentStage = value || 'Lead';
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [stageColors, setStageColors] = useState<Record<Stage, NotionColumnColor>>(() => getStoredStageColors());
 
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Subscribe to global stage color updates
-  useEffect(() => {
-    return subscribeToStageColors((updated) => {
-      setStageColors(updated);
-    });
-  }, []);
 
   // Sync highlighted index to currently selected stage when opening
   useEffect(() => {
@@ -45,15 +30,7 @@ export function StageSelect({ value, onChange }: StageSelectProps) {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement | null;
       if (!target) return;
-
-      if (
-        containerRef.current?.contains(target) ||
-        target.closest('.stage-settings-popup') ||
-        target.closest('[data-popup]')
-      ) {
-        return;
-      }
-
+      if (containerRef.current?.contains(target)) return;
       setIsOpen(false);
     }
 
@@ -149,14 +126,13 @@ export function StageSelect({ value, onChange }: StageSelectProps) {
               const theme = getStageTheme(stage);
               const isSelected = stage === currentStage;
               const isHighlighted = index === highlightedIndex;
-              const stageColor = stageColors[stage] || 'Default';
 
               return (
                 <div
                   key={stage}
                   onClick={() => handleSelectStage(stage)}
                   onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`group flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs cursor-pointer select-none transition-colors ${
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs cursor-pointer select-none transition-colors ${
                     isHighlighted
                       ? 'bg-[#f7f7f5]'
                       : isSelected
@@ -181,16 +157,9 @@ export function StageSelect({ value, onChange }: StageSelectProps) {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-[#2383e2] stroke-[2.2] shrink-0" />
-                    )}
-                    <StageSettingsMenu
-                      stageName={stage}
-                      currentColor={stageColor}
-                      onSelectColor={(color) => setStageColor(stage, color)}
-                    />
-                  </div>
+                  {isSelected && (
+                    <Check className="w-3.5 h-3.5 text-[#2383e2] stroke-[2.2] shrink-0" />
+                  )}
                 </div>
               );
             })}

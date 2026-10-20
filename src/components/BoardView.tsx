@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Plus,
   PanelRight,
@@ -9,13 +9,7 @@ import { STAGES, getLabelColor } from '../types/contact';
 import type { Contact, Stage } from '../types/contact';
 import { InitialsAvatar } from './ui/InitialsAvatar';
 import { ColumnColorMenu } from './ui/ColumnColorMenu';
-import {
-  NOTION_COLUMN_COLORS,
-  getStoredStageColors,
-  saveStoredStageColors,
-  subscribeToStageColors,
-  type NotionColumnColor
-} from '../utils/boardColors';
+import { getStageTheme } from '../utils/boardColors';
 
 const AGGREGATION_STORAGE_KEY = 'notion_board_show_aggregation_v1';
 
@@ -51,23 +45,6 @@ export function BoardView({
   onNewContactInStage,
   onDeleteStageContacts
 }: BoardViewProps) {
-  // Stage column colors with persistence & cross-component subscription
-  const [stageColors, setStageColors] = useState<Record<Stage, NotionColumnColor>>(getStoredStageColors);
-
-  useEffect(() => {
-    return subscribeToStageColors((updated) => {
-      setStageColors(updated);
-    });
-  }, []);
-
-  const handleSelectColor = (stage: Stage, color: NotionColumnColor) => {
-    setStageColors((prev) => {
-      const updated = { ...prev, [stage]: color };
-      saveStoredStageColors(updated);
-      return updated;
-    });
-  };
-
   // Aggregation count toggle per column with persistence
   const [aggregations, setAggregations] = useState<Record<Stage, boolean>>(getStoredAggregations);
 
@@ -105,8 +82,7 @@ export function BoardView({
         {STAGES.map((stage) => {
           const stageContacts = groupedContacts[stage];
           const count = stageContacts.length;
-          const colorName = stageColors[stage] || 'Default';
-          const colorTheme = NOTION_COLUMN_COLORS[colorName];
+          const colorTheme = getStageTheme(stage);
 
           return (
             <div
@@ -138,8 +114,6 @@ export function BoardView({
 
                 <div className="flex items-center gap-0.5 shrink-0">
                   <ColumnColorMenu
-                    currentColor={colorName}
-                    onSelectColor={(color) => handleSelectColor(stage, color)}
                     stageName={stage}
                     showAggregation={aggregations[stage]}
                     onToggleAggregation={() => handleToggleAggregation(stage)}
@@ -254,9 +228,9 @@ export function BoardView({
                               <span className="truncate">{contact.owner}</span>
                             </span>
                           ) : (
-                            <span className="text-[#9b9a97] flex items-center gap-1.5 italic">
+                            <span className="text-[#9b9a97] flex items-center gap-1.5 italic overflow-visible">
                               <UserCheck className="w-3.5 h-3.5 text-[#b5b5ae] shrink-0" />
-                              <span>Unassigned</span>
+                              <span className="pr-1 overflow-visible">Unassigned</span>
                             </span>
                           )}
                         </span>
@@ -272,7 +246,7 @@ export function BoardView({
                       <CalendarDays className="w-4 h-4 text-[#9b9a97]" />
                     </div>
                     <span className="text-xs font-semibold text-[#55554e] mb-0.5">
-                      {stage === 'Customer' ? 'No customers yet' : `No ${stage.toLowerCase()}s yet`}
+                      {stage === 'Customer' ? 'No contacts in Customer' : `No ${stage.toLowerCase()}s yet`}
                     </span>
                     <span className="text-[11px] text-[#9b9a97] mb-3 max-w-[180px] leading-relaxed">
                       Contacts moved to this stage will appear here.
@@ -290,16 +264,14 @@ export function BoardView({
               </div>
 
               {/* Bottom Column "+ New" Button */}
-              {count > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onNewContactInStage(stage)}
-                  className="mt-2 w-full flex items-center gap-1.5 py-1.5 px-2 text-xs text-[#787774] hover:text-[#2e2e2a] hover:bg-[#f0f0ed] rounded transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="font-medium">New</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => onNewContactInStage(stage)}
+                className="mt-2 w-full flex items-center gap-1.5 py-1.5 px-2 text-xs text-[#787774] hover:text-[#2e2e2a] hover:bg-[#f0f0ed] rounded transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="font-medium">New</span>
+              </button>
             </div>
           );
         })}

@@ -13,6 +13,8 @@ import {
 import { STAGES } from '../types/contact';
 import type { Stage, ViewMode, SortOption } from '../types/contact';
 
+import { PropertyVisibilityPopover } from './ui/PropertyVisibilityPopover';
+
 interface DatabaseToolbarProps {
   activeView: ViewMode;
   onViewChange: (view: ViewMode) => void;
@@ -195,6 +197,9 @@ export function DatabaseToolbar({
         </Select.Root>
 
 
+
+        {/* Property Visibility Popover (Table View Only) */}
+        {activeView === 'table' && <PropertyVisibilityPopover activeView={activeView} />}
 
         {/* + New Button */}
         <button

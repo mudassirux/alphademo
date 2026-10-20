@@ -35,12 +35,12 @@ This prototype was crafted to address all 5 evaluation criteria from the design 
 
 | Requirement / Criterion | Implementation in Prototype | Status |
 | :--- | :--- | :---: |
-| **8–12 Fictional Contacts** | 12 diverse contacts in `src/data/mockContacts.ts` spanning all 4 stages with varied completeness | ✅ Complete |
+| **8–12 Fictional Contacts** | 12 diverse contacts in src/data/mockContacts.ts spanning 3 active stages, intentionally leaving the Customer stage empty on initial load | ✅ Complete |
 | **Dual Synchronized Views** | Segmented **Table** & **Board** switcher; updates in either view instantly reflect in both | ✅ Complete |
 | **4 Stage Groups** | `Lead`, `Prospect`, `Qualified`, and `Customer` | ✅ Complete |
 | **8 Core Fields** | `Name`, `Email`, `Company`, `Role`, `Owner`, `Labels`, `Stage`, and `Notes` | ✅ Complete |
 | **Clear Save & Cancel** | Slide-over drawer with **Draft Isolation Pattern** & **Unsaved Changes Dialog** | ✅ Complete |
-| **Empty Board Column State** | Visual empty state placeholder for stages with zero contacts | ✅ Complete |
+| **Empty Board Column State** | Customer column loads empty (0 contacts) by default with an explicit empty-state placeholder; any stage emptied via edits or filters also renders this state | ✅ Complete |
 | **Missing Data Fallback** | Monospace em-dashes (`—`) and `Unassigned` badges for sparse/optional fields | ✅ Complete |
 | **Keyboard Accessibility** | `Enter`/`Space` to open, `Escape` to close, focus trapped in modals, focus returned to opener | ✅ Complete |
 | **Narrower Desktop Layout** | Fluid edge-to-edge layout with responsive side gutters and horizontal overflow (`overflow-x-auto`) | ✅ Complete |
@@ -122,8 +122,9 @@ src/
 │   ├── BoardView.tsx              # 4 Kanban stage columns with cards & aggregation controls
 │   ├── DetailsPanel.tsx           # Base UI Dialog slide-over drawer with draft isolation
 │   └── ui/
-│       ├── ColumnColorMenu.tsx    # Notion column color tint selector & aggregation toggle
-│       ├── StageSelect.tsx        # Stage dropdown with live swatch color previews
+│       ├── PropertyVisibilityPopover.tsx # Notion flyout popover for property show/hide & search
+│       ├── ColumnColorMenu.tsx    # Board column menu: aggregation toggle & Move to Trash
+│       ├── StageSelect.tsx        # Stage dropdown with fixed color swatch previews
 │       ├── UnsavedChangesDialog.tsx # Modal dialog intercepting unsaved dismissals
 │       └── InitialsAvatar.tsx     # Clean initials fallback avatar
 ├── data/
@@ -131,7 +132,10 @@ src/
 ├── types/
 │   └── contact.ts                 # TypeScript interfaces, stage definitions & label registry
 ├── utils/
-│   └── boardColors.ts             # Reactive stage theme engine & localStorage persistence
+│   ├── boardColors.ts             # Reactive stage theme engine & localStorage persistence
+│   ├── propertyVisibilityStore.ts # Reactive column visibility store with localStorage sync
+│   ├── labelStore.ts              # Custom label & swatch manager
+│   └── ownerStore.ts              # Team owner registry
 ├── App.tsx                        # Central state container, search/sort engine, toast system
 └── index.css                      # Design tokens, scrollbar styling & Base UI animations
 ```
@@ -140,14 +144,23 @@ src/
 - State is held in `App.tsx` (`contacts: Contact[]`).
 - Modifying a stage from the details drawer updates the record globally; the card instantly animates to its new column in the Board view, and the Stage pill updates in the Table view.
 
-### Cross-View Reactive Stage Color Sync (`src/utils/boardColors.ts`)
-- Users can customize the color theme of any stage column via the column menu.
-- Changes are reactively broadcast via custom browser events and persisted in `localStorage`.
-- Changing a stage's color in the Board view **automatically updates the corresponding stage pills in both the Table view and Details panel**, maintaining visual consistency across the entire app.
+### Notion-Style Property Visibility (`src/components/ui/PropertyVisibilityPopover.tsx`)
+- Clicking the toolbar's **Show or hide properties** button opens an authentic Notion flyout popover:
+  - **Live Search**: Instant filtering of properties via `"Search for a property..."`.
+  - **Shown in view**: Lists active properties with 6-dot drag handles, Notion type icons, and eye toggle buttons (`Eye`), with a quick `"Hide all"` action.
+  - **Hidden in view**: Lists inactive properties (including `Labels` and `Notes`) with slashed eye toggle buttons (`EyeOff`) and a quick `"Show all"` action.
+  - **Dynamic Columns**: Displays or hides columns in real time across the Table view and respects visible fields on Board cards.
+  - **Persistence**: Saved in `localStorage` (`contact_property_visibility`) across page reloads.
+
+### Fixed Canonical Stage Colors (`src/utils/boardColors.ts`)
+- Each stage has a single, fixed Notion-pastel color theme — no user customization needed:
+  - **Lead** → Gray, **Prospect** → Yellow, **Qualified** → Green, **Customer** → Blue
+- `getStageTheme(stage)` resolves directly from `DEFAULT_STAGE_COLORS` (no localStorage lookup).
+- Stage pills in the Table view, Board column headers, Details panel, and Stage selector all render with consistent, authoritative per-stage colors.
 
 ### Show / Hide Aggregation Counts
 - Each board column menu includes a functional **Show aggregation** / **Hide aggregation** toggle.
-- Preferences are saved in `localStorage` (`board_show_aggregation`), allowing users to toggle column count badges on or off.
+- Preferences are saved in `localStorage` (`notion_board_show_aggregation_v1`), allowing users to toggle column count badges on or off.
 
 ---
 

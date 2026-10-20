@@ -142,7 +142,7 @@ export const INITIAL_CONTACTS: Contact[] = [
     role: 'VP Product',
     owner: 'Samira Khan',
     labels: ['Enterprise'],
-    stage: 'Customer',
+    stage: 'Qualified',
     notes: 'Active customer expanding seat tier and evaluating enterprise plan.',
     avatarColor: '#2383e2'
   }

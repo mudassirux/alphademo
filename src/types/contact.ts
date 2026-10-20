@@ -49,3 +49,34 @@ export function getLabelColor(labelName: string): LabelColor {
     border: style.border
   };
 }
+
+export type PropertyId =
+  | 'name'
+  | 'email'
+  | 'role'
+  | 'stage'
+  | 'company'
+  | 'owner'
+  | 'labels'
+  | 'notes';
+
+export interface PropertyMeta {
+  id: PropertyId;
+  label: string;
+  defaultVisible: boolean;
+  defaultWidth: number;
+  minWidth: number;
+  isPrimary?: boolean;
+}
+
+export const ALL_PROPERTIES: PropertyMeta[] = [
+  { id: 'name', label: 'Name', defaultVisible: true, defaultWidth: 220, minWidth: 140, isPrimary: true },
+  { id: 'email', label: 'Email', defaultVisible: true, defaultWidth: 240, minWidth: 140 },
+  { id: 'role', label: 'Role', defaultVisible: true, defaultWidth: 180, minWidth: 120 },
+  { id: 'stage', label: 'Stage', defaultVisible: true, defaultWidth: 130, minWidth: 90 },
+  { id: 'company', label: 'Company', defaultVisible: true, defaultWidth: 160, minWidth: 110 },
+  { id: 'owner', label: 'Owner', defaultVisible: true, defaultWidth: 140, minWidth: 100 },
+  { id: 'labels', label: 'Labels', defaultVisible: true, defaultWidth: 200, minWidth: 130 },
+  { id: 'notes', label: 'Notes', defaultVisible: false, defaultWidth: 260, minWidth: 160 }
+];
+

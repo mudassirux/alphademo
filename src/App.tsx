@@ -10,24 +10,16 @@ import { INITIAL_CONTACTS } from './data/mockContacts';
 import { STAGES } from './types/contact';
 import type { Contact, ContactDraft, Stage, ViewMode, SortOption } from './types/contact';
 import { subscribeToLabels } from './utils/labelStore';
-import { subscribeToStageColors } from './utils/boardColors';
 
 export function App() {
   const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
   const [, setLabelsVersion] = useState(0);
 
-  // Re-render on global label or stage color additions, renames, recolors
+  // Re-render on global label additions, renames, recolors
   useEffect(() => {
-    const unsubLabels = subscribeToLabels(() => {
+    return subscribeToLabels(() => {
       setLabelsVersion((v) => v + 1);
     });
-    const unsubStages = subscribeToStageColors(() => {
-      setLabelsVersion((v) => v + 1);
-    });
-    return () => {
-      unsubLabels();
-      unsubStages();
-    };
   }, []);
   const [activeView, setActiveView] = useState<ViewMode>('table');
   const [searchQuery, setSearchQuery] = useState('');

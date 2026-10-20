@@ -115,19 +115,10 @@ export const NOTION_COLUMN_COLORS: Record<NotionColumnColor, ColumnColorTheme> =
   }
 };
 
-export const COLOR_OPTIONS: NotionColumnColor[] = [
-  'Default',
-  'Gray',
-  'Brown',
-  'Orange',
-  'Yellow',
-  'Green',
-  'Blue',
-  'Purple',
-  'Pink',
-  'Red'
-];
-
+/**
+ * Fixed stage-to-color mapping. These are canonical colors and cannot be
+ * changed by the user — each stage has a single authoritative Notion pastel.
+ */
 export const DEFAULT_STAGE_COLORS: Record<Stage, NotionColumnColor> = {
   Lead: 'Gray',
   Prospect: 'Yellow',
@@ -135,53 +126,11 @@ export const DEFAULT_STAGE_COLORS: Record<Stage, NotionColumnColor> = {
   Customer: 'Blue'
 };
 
-const STORAGE_KEY = 'notion_board_stage_colors_v2';
-const EVENT_NAME = 'notion-stage-colors-changed';
-
-export function getStoredStageColors(): Record<Stage, NotionColumnColor> {
-  if (typeof window === 'undefined') return { ...DEFAULT_STAGE_COLORS };
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_STAGE_COLORS };
-    const parsed = JSON.parse(raw);
-    return { ...DEFAULT_STAGE_COLORS, ...parsed };
-  } catch {
-    return { ...DEFAULT_STAGE_COLORS };
-  }
-}
-
-export function saveStoredStageColors(colors: Record<Stage, NotionColumnColor>) {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(colors));
-    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: colors }));
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-export function setStageColor(stage: Stage, color: NotionColumnColor) {
-  const current = getStoredStageColors();
-  const updated = { ...current, [stage]: color };
-  saveStoredStageColors(updated);
-}
-
-export function subscribeToStageColors(
-  callback: (colors: Record<Stage, NotionColumnColor>) => void
-): () => void {
-  if (typeof window === 'undefined') return () => {};
-  const handler = (e: Event) => {
-    const detail = (e as CustomEvent<Record<Stage, NotionColumnColor>>).detail || getStoredStageColors();
-    callback(detail);
-  };
-  window.addEventListener(EVENT_NAME, handler);
-  return () => {
-    window.removeEventListener(EVENT_NAME, handler);
-  };
-}
-
+/**
+ * Returns the color theme for a given stage.
+ * Colors are fixed constants — no localStorage lookup required.
+ */
 export function getStageTheme(stage: Stage): ColumnColorTheme {
-  const stageColors = getStoredStageColors();
-  const colorName = stageColors[stage] || DEFAULT_STAGE_COLORS[stage] || 'Default';
-  return NOTION_COLUMN_COLORS[colorName] || NOTION_COLUMN_COLORS.Default;
+  const colorName = DEFAULT_STAGE_COLORS[stage] ?? 'Default';
+  return NOTION_COLUMN_COLORS[colorName] ?? NOTION_COLUMN_COLORS.Default;
 }

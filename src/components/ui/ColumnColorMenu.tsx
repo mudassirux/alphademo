@@ -2,20 +2,12 @@ import { useState } from 'react';
 import { Popover, Dialog } from '@base-ui/react';
 import {
   MoreHorizontal,
-  Check,
   Eye,
   EyeOff,
   Trash2
 } from 'lucide-react';
-import {
-  COLOR_OPTIONS,
-  NOTION_COLUMN_COLORS,
-  type NotionColumnColor
-} from '../../utils/boardColors';
 
 interface ColumnColorMenuProps {
-  currentColor: NotionColumnColor;
-  onSelectColor: (color: NotionColumnColor) => void;
   stageName: string;
   showAggregation: boolean;
   onToggleAggregation: () => void;
@@ -23,8 +15,6 @@ interface ColumnColorMenuProps {
 }
 
 export function ColumnColorMenu({
-  currentColor,
-  onSelectColor,
   stageName,
   showAggregation,
   onToggleAggregation,
@@ -47,8 +37,7 @@ export function ColumnColorMenu({
         <Popover.Portal>
           <Popover.Positioner sideOffset={4} align="start" className="z-50">
             <Popover.Popup className="bg-white border border-[#ebebe7] rounded-lg shadow-lg p-1.5 w-52 outline-none animate-in fade-in-50 zoom-in-95 duration-100">
-              {/* Top Group Actions */}
-              <div className="flex flex-col gap-0.5 pb-0.5">
+              <div className="flex flex-col gap-0.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -82,52 +71,10 @@ export function ColumnColorMenu({
                   <span>Move to Trash</span>
                 </button>
               </div>
-
-            {/* Divider */}
-            <div className="h-px bg-[#ebebe7] my-1" />
-
-            {/* Colors Section */}
-            <div className="text-[11px] font-semibold text-[#787774] px-2.5 py-1 mb-0.5 select-none">
-              Colors
-            </div>
-            <div className="flex flex-col gap-0.5 max-h-56 overflow-y-auto custom-scrollbar">
-              {COLOR_OPTIONS.map((colorName) => {
-                const theme = NOTION_COLUMN_COLORS[colorName];
-                const isSelected = currentColor === colorName;
-
-                return (
-                  <button
-                    key={colorName}
-                    type="button"
-                    onClick={() => {
-                      onSelectColor(colorName);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-2.5 py-1 text-xs text-[#2e2e2a] hover:bg-[#f1f1ee] rounded transition-colors cursor-pointer text-left ${
-                      isSelected ? 'font-medium' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="w-4 h-4 rounded-[3px] shrink-0 border"
-                        style={{
-                          backgroundColor: theme.swatchBg,
-                          borderColor: theme.swatchBorder
-                        }}
-                      />
-                      <span className="truncate">{colorName}</span>
-                    </div>
-                    {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-[#2e2e2a] stroke-[2.5] shrink-0 ml-1.5" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
 
       {/* Move to Trash Confirmation Dialog */}
       <Dialog.Root open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
