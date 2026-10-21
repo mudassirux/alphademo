@@ -23,7 +23,7 @@ interface DetailsPanelProps {
   isNew: boolean;
   defaultStage?: Stage;
   openerEl: HTMLElement | null;
-  onSave: (draft: ContactDraft, isNew: boolean) => void;
+  onSave: (draft: ContactDraft, isNew: boolean, targetContactId?: string | null) => void;
   onClose: () => void;
 }
 
@@ -31,7 +31,7 @@ interface DrawerContentProps {
   contact: Contact | null;
   isNew: boolean;
   defaultStage: Stage;
-  onSave: (draft: ContactDraft, isNew: boolean) => void;
+  onSave: (draft: ContactDraft, isNew: boolean, targetContactId?: string | null) => void;
   onRequestClose: (isDirty: boolean) => void;
   onCancel: () => void;
   onDirtyChange: (isDirty: boolean) => void;
@@ -49,6 +49,7 @@ function DrawerContent({
   const [draft, setDraft] = useState<ContactDraft>(() =>
     isNew || !contact ? createBlankDraft(defaultStage) : getContactDraft(contact)
   );
+  const [hasSaved, setHasSaved] = useState(false);
   const [formError, setFormError] = useState<string>('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,7 +105,8 @@ function DrawerContent({
       notes: draft.notes.trim()
     };
 
-    onSave(cleanDraft, isNew);
+    setHasSaved(true);
+    onSave(cleanDraft, isNew, contact?.id ?? null);
     onRequestClose(false);
   };
 
@@ -314,18 +316,18 @@ function DrawerContent({
 
         {/* Footer Action Bar */}
         <div className="p-4 border-t border-[#ebebe7] bg-[#fbfbfa] flex items-center justify-between">
-          <span className="text-xs text-[#787774] flex items-center gap-1.5">
+          <span className="text-xs text-[#787774] flex items-center gap-1.5 min-h-[20px]">
             {isDirty ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                 <span>Unsaved changes</span>
               </>
-            ) : (
+            ) : hasSaved ? (
               <>
                 <Check className="w-3.5 h-3.5 text-[#35674c]" />
                 <span>All changes saved</span>
               </>
-            )}
+            ) : null}
           </span>
 
           <div className="flex items-center gap-2">

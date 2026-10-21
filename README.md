@@ -45,6 +45,15 @@ This prototype was crafted to address all 5 evaluation criteria from the design 
 | **Keyboard Accessibility** | `Enter`/`Space` to open, `Escape` to close, focus trapped in modals, focus returned to opener | ✅ Complete |
 | **Narrower Desktop Layout** | Fluid edge-to-edge layout with responsive side gutters and horizontal overflow (`overflow-x-auto`) | ✅ Complete |
 
+### Senior Frontend Audit Hardening
+
+| Audit Finding | Issue Description | Resolution Implemented | Status |
+| :--- | :--- | :--- | :---: |
+| **C-1: Save-to-Wrong-Contact** | Saving relied on ambient `selectedContactId` state, risking overwriting the wrong contact if selection changed. | Explicitly bound `targetContactId` to the draft and save payload in `DetailsPanel` and `App`. | ✅ Verified & Fixed |
+| **A-1: HTML Table Semantics** | Assigning `role="button"` and `tabIndex` to `<tr>` stripped native table semantics for screen readers. | Restored native `<tr>` semantics; made contact names and OPEN triggers accessible buttons. | ✅ Verified & Fixed |
+| **F-2: Stage Filter Clarity** | Filtering in Board View rendered misleading "No contacts yet" states in filtered-out columns. | Added contextual **Filtered out** placeholders with 1-click **Clear filter** buttons. | ✅ Verified & Fixed |
+| **F-1: Premature Save Indicator** | Details panel displayed "All changes saved" upon opening clean/new contacts before any save occurred. | Added `hasSaved` state; clean opens remain neutral, and saved status displays only after saving. | ✅ Verified & Fixed |
+
 ---
 
 ## 🎨 1. Visual Design & Layout Decisions
@@ -92,10 +101,10 @@ Rather than displaying identical field density in all contexts, fields are strat
 
 ### Draft Isolation Pattern (Safe Editing)
 To prevent accidental record mutation while typing:
-1. Opening a contact creates a clone (`draft: ContactDraft`) isolated from the global state.
+1. Opening a contact creates a clone (`draft: ContactDraft`) isolated from the global state, explicitly bound to the opened contact ID (`targetContactId`).
 2. Editing inputs in the details panel only alters the local draft.
-3. The panel displays live status: `• Unsaved changes` or `✓ All changes saved`.
-4. Clicking **Save changes** validates inputs, applies updates to the single-source-of-truth state, triggers an auto-dismissing toast notification, and closes the panel.
+3. The panel displays truthful live status: `• Unsaved changes` when dirty, or `✓ All changes saved` only after an actual save in the current session (clean opens remain neutral rather than prematurely displaying saved status).
+4. Clicking **Save changes** validates inputs, explicitly maps the draft to the edited contact ID (eliminating race conditions or save-to-wrong-contact bugs), applies updates to the single-source-of-truth state, triggers an auto-dismissing toast notification, and closes the panel.
 5. Clicking **Cancel** discards the draft without modifying the database.
 
 ### Unsaved Changes Protection Modal
@@ -166,13 +175,19 @@ src/
 
 ## 🛡️ 4. Robustness & Accessibility
 
+- **Native HTML Table Semantics (A-1)**:
+  - Table rows (`<tr>`) preserve native HTML table semantics and ARIA `row` roles without assigning `role="button"` or `tabIndex={0}`.
+  - Interactive record triggers are cleanly exposed via accessible `<button>` controls (the contact name button and the hover/focus `OPEN` button) equipped with descriptive `aria-label` attributes (`Open details for [Name]`).
+  - Screen readers (NVDA, VoiceOver, JAWS) maintain complete table grid navigation, cell coordinates, and header associations without nested interactive control violations.
+- **Filter-Aware Board Columns (F-2)**:
+  - In Board View, columns with 0 matching contacts clearly differentiate between naturally empty states (e.g. `Customer` stage with `+ Add contact`) and filtered states.
+  - When an active stage filter or search query empties a column, it renders a contextual **Filtered out** placeholder (`"Hidden by active filter: [Stage]"`) alongside a 1-click `"Clear filter"` action, preserving clarity while maintaining a shared dataset.
 - **Missing Data Handling**: Contacts with missing optional properties (e.g. no Email, no Role, or no Company) gracefully display a monospace em-dash (`—`), preventing ragged layouts or blank cells.
-- **Empty Column Handling**: When all contacts in a stage are moved elsewhere or filtered out, the column renders an illustrated empty state drop target rather than collapsing.
-- **Keyboard Navigation**:
-  - `Tab` / `Shift+Tab`: Full navigation through rows, buttons, and inputs.
-  - `Enter` / `Space`: Activates table rows and board cards to open the details panel.
+- **Keyboard Navigation & Focus Return**:
+  - `Tab` / `Shift+Tab`: Full navigation through rows, checkboxes, buttons, and inputs.
+  - `Enter` / `Space`: Activates contact buttons, row triggers, and board cards to open the details panel.
   - `Escape`: Closes open dropdowns, popovers, and slide-over panels safely.
-  - Accessible focus trapping in modals powered by `@base-ui/react`.
+  - Accessible focus trapping in modals powered by `@base-ui/react`, returning focus to the opener element upon dismissal.
 - **Responsive Overflow**:
   - Table view employs `overflow-x-auto` with styled scrollbars, ensuring that even on narrower 1024px or 1280px laptop screens, all columns remain accessible without breaking the layout.
 

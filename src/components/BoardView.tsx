@@ -3,7 +3,8 @@ import {
   Plus,
   PanelRight,
   CalendarDays,
-  UserCheck
+  UserCheck,
+  Filter
 } from 'lucide-react';
 import { STAGES, getLabelColor } from '../types/contact';
 import type { Contact, Stage } from '../types/contact';
@@ -33,6 +34,9 @@ function getStoredAggregations(): Record<Stage, boolean> {
 interface BoardViewProps {
   contacts: Contact[];
   selectedContactId: string | null;
+  stageFilter?: 'All stages' | Stage;
+  searchQuery?: string;
+  onClearStageFilter?: () => void;
   onSelectContact: (contact: Contact, openerEl: HTMLElement) => void;
   onNewContactInStage: (stage: Stage) => void;
   onDeleteStageContacts?: (stage: Stage) => void;
@@ -41,6 +45,9 @@ interface BoardViewProps {
 export function BoardView({
   contacts,
   selectedContactId,
+  stageFilter = 'All stages',
+  searchQuery = '',
+  onClearStageFilter,
   onSelectContact,
   onNewContactInStage,
   onDeleteStageContacts
@@ -240,27 +247,73 @@ export function BoardView({
                 })}
 
                 {/* Empty Column Placeholder */}
-                {count === 0 && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#dcdcd6] rounded-md bg-white/60">
-                    <div className="w-8 h-8 rounded-full bg-[#f1f1ee] flex items-center justify-center text-[#9b9a97] mb-2">
-                      <CalendarDays className="w-4 h-4 text-[#9b9a97]" />
+                {count === 0 && (() => {
+                  const isFilteredOutByStage = stageFilter !== 'All stages' && stageFilter !== stage;
+                  const isFilteredOutBySearch = Boolean(searchQuery.trim());
+
+                  if (isFilteredOutByStage) {
+                    return (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#dcdcd6] rounded-md bg-white/60">
+                        <div className="w-8 h-8 rounded-full bg-[#edf5fd] flex items-center justify-center text-[#2383e2] mb-2">
+                          <Filter className="w-4 h-4 text-[#2383e2]" />
+                        </div>
+                        <span className="text-xs font-semibold text-[#55554e] mb-0.5">
+                          Filtered out
+                        </span>
+                        <span className="text-[11px] text-[#9b9a97] mb-3 max-w-[180px] leading-relaxed">
+                          Hidden by active filter: <span className="font-medium text-[#55554e]">{stageFilter}</span>
+                        </span>
+                        {onClearStageFilter && (
+                          <button
+                            type="button"
+                            onClick={onClearStageFilter}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#2383e2] bg-[#edf5fd] hover:bg-[#e2effb] border border-[#d5e4f1] rounded-md transition-colors cursor-pointer shadow-2xs"
+                          >
+                            <span>Clear filter</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (isFilteredOutBySearch) {
+                    return (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#dcdcd6] rounded-md bg-white/60">
+                        <div className="w-8 h-8 rounded-full bg-[#f1f1ee] flex items-center justify-center text-[#9b9a97] mb-2">
+                          <Filter className="w-4 h-4 text-[#9b9a97]" />
+                        </div>
+                        <span className="text-xs font-semibold text-[#55554e] mb-0.5">
+                          No matches found
+                        </span>
+                        <span className="text-[11px] text-[#9b9a97] mb-3 max-w-[180px] leading-relaxed">
+                          No {stage.toLowerCase()} contacts match "{searchQuery}".
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#dcdcd6] rounded-md bg-white/60">
+                      <div className="w-8 h-8 rounded-full bg-[#f1f1ee] flex items-center justify-center text-[#9b9a97] mb-2">
+                        <CalendarDays className="w-4 h-4 text-[#9b9a97]" />
+                      </div>
+                      <span className="text-xs font-semibold text-[#55554e] mb-0.5">
+                        {stage === 'Customer' ? 'No contacts in Customer' : `No ${stage.toLowerCase()}s yet`}
+                      </span>
+                      <span className="text-[11px] text-[#9b9a97] mb-3 max-w-[180px] leading-relaxed">
+                        Contacts moved to this stage will appear here.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onNewContactInStage(stage)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#2e2e2a] bg-white border border-[#d7d7d1] rounded-md hover:bg-[#f8f8f6] transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add contact</span>
+                      </button>
                     </div>
-                    <span className="text-xs font-semibold text-[#55554e] mb-0.5">
-                      {stage === 'Customer' ? 'No contacts in Customer' : `No ${stage.toLowerCase()}s yet`}
-                    </span>
-                    <span className="text-[11px] text-[#9b9a97] mb-3 max-w-[180px] leading-relaxed">
-                      Contacts moved to this stage will appear here.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onNewContactInStage(stage)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#2e2e2a] bg-white border border-[#d7d7d1] rounded-md hover:bg-[#f8f8f6] transition-colors cursor-pointer shadow-2xs"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Add contact</span>
-                    </button>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Bottom Column "+ New" Button */}

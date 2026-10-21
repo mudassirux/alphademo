@@ -188,7 +188,11 @@ export function App() {
   }, [activeView, visibleContacts, isEditorOpen]);
 
   // Commit Handler (triggered on Save / Create)
-  const handleSaveContact = (draft: ContactDraft, isNew: boolean) => {
+  const handleSaveContact = (
+    draft: ContactDraft,
+    isNew: boolean,
+    targetContactId?: string | null
+  ) => {
     if (isNew) {
       const newContact: Contact = {
         id: `contact-${crypto.randomUUID()}`,
@@ -204,25 +208,28 @@ export function App() {
       };
       setContacts((prev) => [newContact, ...prev]);
       setToastMessage('Contact created');
-    } else if (selectedContactId) {
-      setContacts((prev) =>
-        prev.map((c) =>
-          c.id === selectedContactId
-            ? {
-                ...c,
-                name: draft.name,
-                email: draft.email,
-                company: draft.company,
-                role: draft.role,
-                owner: draft.owner,
-                labels: draft.labels,
-                stage: draft.stage,
-                notes: draft.notes
-              }
-            : c
-        )
-      );
-      setToastMessage('Changes saved');
+    } else {
+      const targetId = targetContactId ?? selectedContactId;
+      if (targetId) {
+        setContacts((prev) =>
+          prev.map((c) =>
+            c.id === targetId
+              ? {
+                  ...c,
+                  name: draft.name,
+                  email: draft.email,
+                  company: draft.company,
+                  role: draft.role,
+                  owner: draft.owner,
+                  labels: draft.labels,
+                  stage: draft.stage,
+                  notes: draft.notes
+                }
+              : c
+          )
+        );
+        setToastMessage('Changes saved');
+      }
     }
   };
 
@@ -275,6 +282,9 @@ export function App() {
             <BoardView
               contacts={visibleContacts}
               selectedContactId={selectedContactId}
+              stageFilter={stageFilter}
+              searchQuery={searchQuery}
+              onClearStageFilter={() => setStageFilter('All stages')}
               onSelectContact={handleOpenExistingContact}
               onNewContactInStage={(stage) => handleOpenNewContact(stage)}
               onDeleteStageContacts={handleDeleteStageContacts}

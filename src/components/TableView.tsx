@@ -298,16 +298,7 @@ export function TableView({
               <tr
                 key={contact.id}
                 id={rowId}
-                tabIndex={0}
-                role="button"
-                aria-label={`Open details for ${contact.name}`}
                 onClick={(e) => onSelectContact(contact, e.currentTarget)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelectContact(contact, e.currentTarget);
-                  }
-                }}
                 className={`group cursor-pointer transition-colors outline-none h-10 ${
                   isRowSelected
                     ? 'bg-[#edf5fd]'
@@ -353,9 +344,17 @@ export function TableView({
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <FileText className="w-4 h-4 text-[#787774] shrink-0 stroke-[1.6]" />
-                            <span className="font-semibold text-[#2e2e2a] group-hover:text-[#2383e2] transition-colors truncate">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectContact(contact, e.currentTarget);
+                              }}
+                              aria-label={`Open details for ${contact.name}`}
+                              className="font-semibold text-[#2e2e2a] group-hover:text-[#2383e2] hover:text-[#2383e2] transition-colors truncate cursor-pointer bg-transparent border-0 p-0 text-left outline-none focus-visible:underline"
+                            >
                               {contact.name}
-                            </span>
+                            </button>
                           </div>
 
                           {/* Hover OPEN button matching Image 1 */}
@@ -365,7 +364,8 @@ export function TableView({
                               e.stopPropagation();
                               onSelectContact(contact, e.currentTarget);
                             }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold text-[#55554e] hover:text-[#2e2e2a] bg-white border border-[#d7d7d1] hover:border-[#b5b5ae] rounded shadow-2xs cursor-pointer shrink-0"
+                            aria-label={`Open details for ${contact.name}`}
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-[#2383e2] transition-opacity inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold text-[#55554e] hover:text-[#2e2e2a] bg-white border border-[#d7d7d1] hover:border-[#b5b5ae] rounded shadow-2xs cursor-pointer shrink-0"
                           >
                             <PanelRight className="w-3 h-3 text-[#9b9a97]" />
                             <span>OPEN</span>
